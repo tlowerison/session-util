@@ -47,6 +47,7 @@ impl<T> Deref for Session<T> {
 pub trait RawSession<ParsedSession>: Sized {
     type Key;
     type Validation;
+    fn try_decode(self, key: &Self::Key, validation: &Self::Validation) -> Result<ParsedSession, anyhow::Error>;
     fn add_extensions(
         session: Result<Option<Self>, anyhow::Error>,
         key: &Self::Key,
@@ -58,6 +59,9 @@ pub trait RawSession<ParsedSession>: Sized {
 impl<T: Send + Sync + 'static> RawSession<T> for T {
     type Key = ();
     type Validation = ();
+    fn try_decode(self, _: &Self::Key, _: &Self::Validation) -> Result<T, anyhow::Error> {
+        Ok(self)
+    }
     fn add_extensions(
         session: Result<Option<Self>, anyhow::Error>,
         _: &Self::Key,

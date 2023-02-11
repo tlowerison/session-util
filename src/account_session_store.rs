@@ -38,6 +38,19 @@ where
 {
     type Key = DecodingKey;
     type Validation = Validation;
+    fn try_decode(
+        self,
+        key: &Self::Key,
+        validation: &Self::Validation,
+    ) -> Result<AccountSession<AccountId, Fields>, anyhow::Error> {
+        self.try_map(|value| {
+            let token_data = decode::<AccountSessionClaims<AccountId, Fields>>(&value.token, key, validation)?;
+            Ok(AccountSessionToken {
+                token: value.token,
+                claims: token_data.claims,
+            })
+        })
+    }
     fn add_extensions(
         session: Result<Option<Self>, anyhow::Error>,
         key: &Self::Key,

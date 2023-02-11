@@ -47,9 +47,9 @@ fn main() -> Result<(), Error> {
     let account_id: Value = serde_json::from_str(&account_id)?;
 
     let jwt_private_certificate: EncodingKey =
-        parse_encoding_key(&find_and_parse_pem(&jwt_private_certificate, &["PRIVATE KEY"])?); // expects RSA-PKCS1.5 PEM format
+        parse_encoding_key(find_and_parse_pem(&jwt_private_certificate, &["PRIVATE KEY"])?); // expects RSA-PKCS1.5 PEM format
     let jwt_public_certificate: DecodingKey =
-        parse_decoding_key(&find_and_parse_pem(&jwt_public_certificate, &["PUBLIC KEY"])?); // expects RSA-PKCS1.5 PEM format
+        parse_decoding_key(find_and_parse_pem(&jwt_public_certificate, &["PUBLIC KEY"])?); // expects RSA-PKCS1.5 PEM format
 
     let mut fields = serde_json::Map::default();
 

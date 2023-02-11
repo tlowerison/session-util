@@ -47,5 +47,5 @@ axum-core-03 = ["dep:axum-core-03"]
 cli = ["dep:clap"]
 
 [[bin]]
-name = "create_service_account_jwt"
+name = "create_account_jwt"
 required-features = ["account","cli"]

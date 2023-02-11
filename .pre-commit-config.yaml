@@ -43,7 +43,7 @@ repos:
         name: cargo-clippy
         description: lint the minimal changed packages in the cargo workspace
         stages: [commit]
-        entry: cargo clippy --verbose --fix --allow-dirty --allow-staged
+        entry: cargo clippy --verbose --fix --allow-dirty --allow-staged --all-features
         language: system
         types: [rust]
         always_run: true

@@ -13,30 +13,60 @@ use std::ops::Deref;
 use typed_builder::TypedBuilder;
 use uuid::Uuid;
 
-pub const ACCOUNT_JWT_HEADER: &str = "x-account-jwt";
+pub const HTTP_ACCOUNT_SESSION_JWT_HEADER: &str = "x-account-session-jwt";
 
-pub trait AccountStore = SessionStore<Value = AccountSessionToken<()>>;
-pub type DynAccountStore = DynSessionStore<AccountSessionToken<()>>;
+pub trait AccountSessionStore: SessionStore<Value = AccountSessionToken<()>> {}
+
+impl<T: SessionStore<Value = AccountSessionToken<()>>> AccountSessionStore for T {}
+
+pub type DynAccountSessionStore = DynSessionStore<AccountSessionToken<()>>;
 pub type AccountSession<AccountId, Fields> = Session<AccountSessionToken<AccountSessionClaims<AccountId, Fields>>>;
 
-impl<AccountId: DeserializeOwned, Fields: DeserializeOwned> RawSession<AccountSession<AccountId, Fields>>
-    for Session<AccountSessionToken<()>>
+/// wrapper struct for the session account id
+/// useful for cases where all you want is the
+/// account id and either do not want to or are
+/// unable to specify the additional fields
+/// included in the jwt claim
+#[derive(AsRef, AsMut, Clone, Derivative, Deserialize, Deref, DerefMut, Display, Eq, From, PartialEq, Serialize)]
+#[derivative(Debug = "transparent")]
+pub struct AccountSessionSubject<AccountId>(pub AccountId);
+
+impl<AccountId, Fields> RawSession<AccountSession<AccountId, Fields>> for Session<AccountSessionToken<()>>
+where
+    AccountId: Clone + DeserializeOwned + Send + Sync + 'static,
+    Fields: DeserializeOwned + Send + Sync + 'static,
 {
     type Key = DecodingKey;
     type Validation = Validation;
-    fn try_decode(
-        self,
+    fn add_extensions(
+        session: Result<Option<Self>, anyhow::Error>,
         key: &Self::Key,
         validation: &Self::Validation,
-    ) -> Result<AccountSession<AccountId, Fields>, anyhow::Error> {
-        self.try_map(|account_session_raw_token| {
-            let token_data =
-                decode::<AccountSessionClaims<AccountId, Fields>>(&account_session_raw_token.token, key, validation)?;
-            Ok(AccountSessionToken {
-                token: account_session_raw_token.token,
-                claims: token_data.claims,
-            })
-        })
+        extensions: &mut http::Extensions,
+    ) {
+        let parsed_session = match session {
+            Ok(Some(session)) => {
+                let token_data =
+                    decode::<AccountSessionClaims<AccountId, Fields>>(&session.value.token, key, validation);
+                token_data
+                    .map(|x| AccountSessionToken {
+                        token: session.value.token,
+                        claims: x.claims,
+                    })
+                    .ok()
+            }
+            _ => None,
+        };
+        match parsed_session {
+            Some(parsed_session) => {
+                extensions.insert(Some(AccountSessionSubject(parsed_session.account_id.clone())));
+                extensions.insert(Some(parsed_session));
+            }
+            _ => {
+                extensions.insert(None::<AccountSessionSubject<AccountId>>);
+                extensions.insert(None::<AccountSession<AccountId, Fields>>);
+            }
+        }
     }
 }
 
@@ -46,7 +76,7 @@ where
     S: SessionStore<Value = Self>,
 {
     fn get_unparsed_request_session(store: &S, req: &Request<ReqBody>) -> Result<RequestSession<S::Value>, Error> {
-        if let Some(service_account_jwt) = req.headers().get(ACCOUNT_JWT_HEADER) {
+        if let Some(service_account_jwt) = req.headers().get(HTTP_ACCOUNT_SESSION_JWT_HEADER) {
             return Ok(RequestSession::Session(Session {
                 session_id: Uuid::new_v4(),
                 created_at: Utc::now().naive_utc(),

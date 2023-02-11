@@ -7,8 +7,26 @@ use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::{Debug, Display};
 use std::ops::{Deref, DerefMut};
 use std::{marker::PhantomData, sync::Arc};
+use typed_builder::TypedBuilder;
 use url::Url;
 use uuid::Uuid;
+
+#[derive(Clone, Copy, Derivative, TypedBuilder)]
+#[derivative(Debug)]
+pub struct RedisStoreConfig<KN, K, U, P> {
+    pub key_name: KN,
+    pub key: K,
+    pub username: Option<U>,
+    #[derivative(Debug = "ignore")]
+    pub password: Option<P>,
+}
+
+#[derive(Clone, Copy, Debug, TypedBuilder)]
+pub struct RedisStoreNodeConfig<H> {
+    pub host: H,
+    pub port: Option<u16>,
+    pub db: Option<u16>,
+}
 
 pub struct Manager<Client> {
     client: Client,
@@ -85,23 +103,6 @@ pub struct RedisStore<T, Pool> {
     pool: Pool,
     #[derivative(Debug = "ignore")]
     _value: PhantomData<T>,
-}
-
-#[derive(Clone, Copy, Derivative)]
-#[derivative(Debug)]
-pub struct RedisStoreConfig<'a> {
-    pub key_name: &'a str,
-    pub key: &'a str,
-    pub username: Option<&'a str>,
-    #[derivative(Debug = "ignore")]
-    pub password: Option<&'a str>,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct RedisStoreNodeConfig<'a> {
-    pub host: &'a str,
-    pub port: Option<u16>,
-    pub db: Option<u16>,
 }
 
 #[async_trait]
@@ -196,24 +197,43 @@ where
     }
 }
 
-pub async fn redis_store_standalone<'a, T>(
-    config: RedisStoreConfig<'a>,
-    node_config: RedisStoreNodeConfig<'a>,
-) -> Result<RedisStore<T, Pool<Manager<redis::Client>, Connection<redis::Client>>>, Error> {
-    let path = node_config.db.map(|db| format!("/{db}"));
+pub async fn redis_store_standalone<T, KN, K, U, P, H>(
+    RedisStoreConfig {
+        key_name,
+        key,
+        username,
+        password,
+    }: RedisStoreConfig<KN, K, U, P>,
+    RedisStoreNodeConfig { host, port, db }: RedisStoreNodeConfig<H>,
+) -> Result<RedisStore<T, Pool<Manager<redis::Client>, Connection<redis::Client>>>, Error>
+where
+    KN: ToString,
+    K: ToString,
+    U: ToString,
+    P: ToString,
+    H: ToString,
+{
+    let key_name = key_name.to_string();
+    let key = key.to_string();
+    let username = username.as_ref().map(ToString::to_string);
+    let password = password.as_ref().map(ToString::to_string);
+    let host = host.to_string();
+
+    let path = db.map(|db| format!("/{db}"));
+
     let url = url(
-        config.username,
-        config.password,
-        node_config.host,
-        node_config.port,
+        username.as_deref(),
+        password.as_deref(),
+        &host,
+        port,
         path.as_deref(),
         None,
     )?;
     let safe_url = safe_url(
-        config.username,
-        config.password,
-        node_config.host,
-        node_config.port,
+        username.as_deref(),
+        password.as_deref(),
+        &host,
+        port,
         path.as_deref(),
         None,
     )?;
@@ -228,42 +248,57 @@ pub async fn redis_store_standalone<'a, T>(
     pool.get().await.map_err(Error::msg)?;
 
     Ok(RedisStore {
-        key_name: config.key_name.into(),
-        key: Arc::new(Key::new(HMAC_SHA256, config.key.as_bytes())),
+        key_name,
+        key: Arc::new(Key::new(HMAC_SHA256, key.as_bytes())),
         _value: PhantomData,
         pool,
     })
 }
 
-pub async fn redis_store_cluster<'a, T, NodeConfigs>(
-    config: RedisStoreConfig<'a>,
-    node_configs: NodeConfigs,
+pub async fn redis_store_cluster<T, KN, K, U, P, H>(
+    RedisStoreConfig {
+        key_name,
+        key,
+        username,
+        password,
+    }: RedisStoreConfig<KN, K, U, P>,
+    node_configs: impl IntoIterator<Item = RedisStoreNodeConfig<H>>,
 ) -> Result<RedisStore<T, Pool<Manager<redis_cluster_async::Client>, Connection<redis_cluster_async::Client>>>, Error>
 where
-    NodeConfigs: IntoIterator<Item = RedisStoreNodeConfig<'a>>,
+    KN: ToString,
+    K: ToString,
+    U: ToString,
+    P: ToString,
+    H: ToString,
 {
+    let key_name = key_name.to_string();
+    let key = key.to_string();
+    let username = username.as_ref().map(ToString::to_string);
+    let password = password.as_ref().map(ToString::to_string);
+
     let (urls, safe_urls): (Vec<_>, Vec<_>) = node_configs
         .into_iter()
-        .map(|node_config| {
-            let path = node_config.db.map(|db| format!("/{db}"));
-            Ok((
-                url(
-                    config.username,
-                    config.password,
-                    node_config.host,
-                    node_config.port,
-                    path.as_deref(),
-                    None,
-                )?,
-                safe_url(
-                    config.username,
-                    config.password,
-                    node_config.host,
-                    node_config.port,
-                    path.as_deref(),
-                    None,
-                )?,
-            ))
+        .map(|RedisStoreNodeConfig { host, port, db }| {
+            let host = host.to_string();
+            let path = db.map(|db| format!("/{db}"));
+
+            let url = url(
+                username.as_deref(),
+                password.as_deref(),
+                &host,
+                port,
+                path.as_deref(),
+                None,
+            )?;
+            let safe_url = safe_url(
+                username.as_deref(),
+                password.as_deref(),
+                &host,
+                port,
+                path.as_deref(),
+                None,
+            )?;
+            Ok((url, safe_url))
         })
         .collect::<Result<Vec<_>, Error>>()?
         .into_iter()
@@ -286,21 +321,25 @@ where
     pool.get().await.map_err(Error::msg)?;
 
     Ok(RedisStore {
-        key_name: config.key_name.into(),
-        key: Arc::new(Key::new(HMAC_SHA256, config.key.as_bytes())),
+        key_name,
+        key: Arc::new(Key::new(HMAC_SHA256, key.as_bytes())),
         _value: PhantomData,
         pool,
     })
 }
 
-pub async fn redis_store<'a, T, NodeConfigs>(
-    config: RedisStoreConfig<'a>,
-    node_configs: NodeConfigs,
+pub async fn redis_store<T, KN, K, U, P, H>(
+    config: RedisStoreConfig<KN, K, U, P>,
+    node_configs: impl IntoIterator<Item = RedisStoreNodeConfig<H>>,
     is_cluster: bool,
 ) -> Result<DynSessionStore<T>, Error>
 where
     T: 'static + Clone + DeserializeOwned + Serialize + Send + Sync,
-    NodeConfigs: IntoIterator<Item = RedisStoreNodeConfig<'a>>,
+    KN: ToString,
+    K: ToString,
+    U: ToString,
+    P: ToString,
+    H: ToString,
 {
     if is_cluster {
         redis_store_cluster(config, node_configs).await.map(|x| x.into_dyn())

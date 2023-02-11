@@ -63,6 +63,7 @@ impl<'de> Deserialize<'de> for CookieValue {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct CookieConfig<'a, T: 'a + Clone> {
     pub value: &'a T,
     pub http_only: bool,

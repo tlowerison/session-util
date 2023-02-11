@@ -111,16 +111,7 @@ where
             }
         }
         .map(move |session| {
-            match session {
-                Ok(Some(session)) => match session.try_decode(&key, &validation) {
-                    Ok(parsed_session) => req.extensions_mut().insert(Some(parsed_session)),
-                    Err(err) => {
-                        tracing::error!("{err}");
-                        req.extensions_mut().insert(None::<P>)
-                    }
-                },
-                _ => req.extensions_mut().insert(None::<P>),
-            };
+            Session::<R>::add_extensions(session, &key, &validation, req.extensions_mut());
             ResponseFuture::future(inner.call(req))
         })
         .flatten()

@@ -1,11 +1,11 @@
-#![feature(trait_alias, type_alias_impl_trait)]
-
 #[macro_use]
 extern crate async_trait;
 #[macro_use]
 extern crate cfg_if;
 #[macro_use]
 extern crate derivative;
+#[macro_use]
+extern crate derive_more;
 #[macro_use]
 extern crate log;
 #[macro_use]
@@ -29,7 +29,7 @@ pub use util::*;
 
 cfg_if! {
     if #[cfg(feature = "account")] {
-        mod account_store;
-        pub use account_store::*;
+        mod account_session_store;
+        pub use account_session_store::*;
     }
 }

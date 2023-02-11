@@ -14,6 +14,7 @@ cookie = { version = "0", features = ["secure", "percent-encode"] }
 data-encoding = "2"
 deadpool = "0"
 derivative = "2"
+derive_more = "0"
 futures = "0"
 http = "0"
 hyper = "0"
@@ -30,21 +31,21 @@ tokio = "1"
 tower-layer = "0"
 tower-service = "0"
 tracing = "0"
+typed-builder = "0"
 url = "2"
 uuid = { version = "1", features = ["serde", "v4"] }
 
 serde_with = { version = "2", optional = true }
-typed-builder = { version = "0", optional = true }
 
 axum-core-02 = { package = "axum-core", version = "0.2", optional = true }
 axum-core-03 = { package = "axum-core", version = "0.3", optional = true }
 
 [features]
-account = ["dep:serde_with", "dep:typed-builder"]
+account = ["dep:serde_with"]
 axum-core-02 = ["dep:axum-core-02"]
 axum-core-03 = ["dep:axum-core-03"]
-create_service_account_jwt = ["account", "clap"]
+cli = ["dep:clap"]
 
 [[bin]]
 name = "create_service_account_jwt"
-required-features = ["create_service_account_jwt"]
+required-features = ["account","cli"]

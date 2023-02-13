@@ -2,7 +2,6 @@ use crate::*;
 use anyhow::Error;
 use deadpool::managed::{self, Object, Pool};
 use derivative::Derivative;
-use derive_more::*;
 use log::info;
 use redis_cluster_async::redis::{self, aio::ConnectionLike, cmd, RedisError};
 use ring::hmac::{Key, HMAC_SHA256};

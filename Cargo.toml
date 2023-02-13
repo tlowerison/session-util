@@ -44,7 +44,7 @@ account-session = ["dep:derive_more", "dep:derivative", "dep:serde_with", "dep:t
 axum-core-02 = ["dep:axum-core-02", "dep:log"]
 axum-core-03 = ["dep:axum-core-03", "dep:log"]
 cli = ["dep:clap"]
-redis-backend = ["dep:deadpool", "dep:derivative", "dep:derive_more", "dep:log", "dep:redis_cluster_async", "dep:typed-builder", "dep:url"]
+redis-backend = ["dep:deadpool", "dep:derivative", "dep:log", "dep:redis_cluster_async", "dep:typed-builder", "dep:url"]
 
 [[bin]]
 name = "create_account_jwt"

@@ -7,7 +7,7 @@ Provides integrations with:
 - [axum](https://github.com/tokio-rs/axum), for extracting verified sessions from http request extensions in request handlers
 
 ## Example
-Note that this example would require the `account-session` and `redis-backend` features to be enabled.
+Note that this example would require the features `account-session`, `redis-backend` and one of `axum-core-02` or `axum-core-03` to be enabled.
 ```rs
 use axum::Router;
 use jsonwebtoken as jwt;

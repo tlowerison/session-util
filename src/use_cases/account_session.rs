@@ -4,6 +4,7 @@ use crate::{
 use anyhow::Error;
 use chrono::{Duration, NaiveDateTime, Utc};
 use derivative::Derivative;
+use derive_more::*;
 use http::Request;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{de::DeserializeOwned, Serialize};

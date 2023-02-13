@@ -96,7 +96,7 @@ where
             .remove::<Option<Session<T>>>()
             .flatten()
             .ok_or_else(|| {
-                error!("tried to extract session::Session from request when there was none, use axum::extract::Extract<Option<session::Session<T>>> instead of axum::extract::Extract<session::Session<T>> for correct extraction session from requests");
+                log::error!("tried to extract session::Session from request when there was none, use axum::extract::Extract<Option<session::Session<T>>> instead of axum::extract::Extract<session::Session<T>> for correct extraction session from requests");
                 http::StatusCode::INTERNAL_SERVER_ERROR
             })
     }
@@ -117,7 +117,7 @@ where
             .remove::<Option<Session<T>>>()
             .flatten()
             .ok_or_else(|| {
-                error!("tried to extract session::Session from request when there was none, use axum::extract::Extract<Option<session::Session<T>>> instead of axum::extract::Extract<session::Session<T>> for correct extraction session from requests");
+                log::error!("tried to extract session::Session from request when there was none, use axum::extract::Extract<Option<session::Session<T>>> instead of axum::extract::Extract<session::Session<T>> for correct extraction session from requests");
                 http::StatusCode::INTERNAL_SERVER_ERROR
             })
     }

@@ -30,7 +30,6 @@ pub struct AccountSessionFields {
 // to avoid needing to plug in these generics everywhere
 type AccountSession = session_util::AccountSession<AccountId, AccountSessionFields>;
 
-
 pub const ACCOUNT_SESSION_JWT_ALGORITHM: jwt::Algorithm = jwt::Algorithm::RS512;
 lazy_static! {
     pub static ref ACCOUNT_SESSION_DECODING_KEY: jwt::DecodingKey = {

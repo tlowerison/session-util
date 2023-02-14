@@ -394,10 +394,11 @@ fn safe_url(
     port: Option<u16>,
     path: Option<&str>,
     query: Option<&str>,
-) -> Result<Url, Error> {
+) -> Result<String, Error> {
     let username = match username.is_some() || password.is_some() {
         true => Some("<credentials>"),
         false => None,
     };
-    url(username, None, host, port, path, query)
+    let safe_url = format!("{}", url(username, None, host, port, path, query)?);
+    Ok(safe_url.replace("%3C", "<").replace("%3E", ">"))
 }

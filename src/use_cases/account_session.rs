@@ -34,8 +34,8 @@ pub struct AccountSessionSubject<AccountId>(pub AccountId);
 
 impl<AccountId, Fields> RawSession<AccountSession<AccountId, Fields>> for Session<AccountSessionToken<()>>
 where
-    AccountId: Clone + DeserializeOwned + Send + Sync + 'static,
-    Fields: DeserializeOwned + Send + Sync + 'static,
+    AccountId: Clone + std::fmt::Debug + DeserializeOwned + Send + Sync + 'static,
+    Fields: DeserializeOwned + std::fmt::Debug + Send + Sync + 'static,
 {
     type Key = DecodingKey;
     type Validation = Validation;
@@ -58,16 +58,10 @@ where
         validation: &Self::Validation,
         extensions: &mut http::Extensions,
     ) {
-        let parsed_session = match session {
+        let parsed_session: Option<AccountSession<AccountId, Fields>> = match session {
             Ok(Some(session)) => {
-                let token_data =
-                    decode::<AccountSessionClaims<AccountId, Fields>>(&session.value.token, key, validation);
-                token_data
-                    .map(|x| AccountSessionToken {
-                        token: session.value.token,
-                        claims: x.claims,
-                    })
-                    .ok()
+                extensions.insert(Some(session.clone()));
+                session.try_decode(key, validation).ok()
             }
             _ => None,
         };
@@ -79,6 +73,7 @@ where
             _ => {
                 extensions.insert(None::<AccountSessionSubject<AccountId>>);
                 extensions.insert(None::<AccountSession<AccountId, Fields>>);
+                extensions.insert(None::<Session<AccountSessionToken<()>>>);
             }
         }
     }

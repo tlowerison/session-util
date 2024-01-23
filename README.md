@@ -33,12 +33,12 @@ type AccountSession = session_util::AccountSession<AccountId, AccountSessionFiel
 pub const ACCOUNT_SESSION_JWT_ALGORITHM: jwt::Algorithm = jwt::Algorithm::RS512;
 lazy_static! {
     pub static ref ACCOUNT_SESSION_DECODING_KEY: jwt::DecodingKey = {
-        let jwt_public_certificate = std::env::var().expect("expected an environment variable JWT_PUBLIC_CERTIFICATE to exist");
-        session_util::parse_decoding_key(jwt_public_certificate).expect("unable to parse JWT_PUBLIC_CERTIFICATE as a valid public key")
+        let jwt_public_certificate = std::env::var("JWT_PUBLIC_CERTIFICATE").expect("expected an environment variable JWT_PUBLIC_CERTIFICATE to exist");
+        session_util::parse_decoding_key(jwt_public_certificate)
     };
     pub static ref ACCOUNT_SESSION_ENCODING_KEY: jwt::EncodingKey = {
-        let jwt_private_certificate = std::env::var().expect("expected an environment variable JWT_PRIVATE_CERTIFICATE to exist");
-        session_util::parse_encoding_key(jwt_private_certificate).expect("unable to parse JWT_PRIVATE_CERTIFICATE as a valid private key")
+        let jwt_private_certificate = std::env::var("JWT_PRIVATE_CERTIFICATE").expect("expected an environment variable JWT_PRIVATE_CERTIFICATE to exist");
+        session_util::parse_encoding_key(jwt_private_certificate)
     };
     pub static ref ACCOUNT_SESSION_JWT_VALIDATION: jwt::Validation = {
         let mut validation = jwt::Validation::new(ACCOUNT_SESSION_JWT_ALGORITHM);

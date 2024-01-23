@@ -1,13 +1,12 @@
 use crate::*;
-use anyhow::Error;
-use chrono::{NaiveDateTime, Utc};
-use http::header::{HeaderValue, SET_COOKIE};
-use http::{Request, Response};
-use hyper::Body;
-use ring::hmac::Key;
-use serde::{de::DeserializeOwned, Serialize};
-use std::{fmt::Debug, ops::Deref, sync::Arc};
-use uuid::Uuid;
+use ::anyhow::Error;
+use ::chrono::{NaiveDateTime, Utc};
+use ::http::header::{HeaderValue, SET_COOKIE};
+use ::http::{HeaderMap, Request};
+use ::ring::hmac::Key;
+use ::serde::{de::DeserializeOwned, Serialize};
+use ::std::{fmt::Debug, ops::Deref, sync::Arc};
+use ::uuid::Uuid;
 
 pub type DynSessionStore<T> = Arc<dyn SessionStore<Value = T>>;
 
@@ -31,7 +30,7 @@ pub trait SessionStore: 'static + Send + Sync + Debug {
 
     async fn store_session_and_set_cookie(
         &self,
-        res: &mut Response<Body>,
+        response_headers: &mut HeaderMap,
         cookie_config: CookieConfig<'_, Self::Value>,
         prefix: Option<String>,
     ) -> Result<(), Error> {
@@ -75,13 +74,13 @@ pub trait SessionStore: 'static + Send + Sync + Debug {
         let header_value = HeaderValue::from_str(&cookie).map_err(Error::msg)?;
 
         self.set(prefix, &session.session_id, &session).await?;
-        res.headers_mut().append(SET_COOKIE, header_value);
+        response_headers.append(SET_COOKIE, header_value);
         Ok(())
     }
 
     async fn delete_session(
         &self,
-        res: &mut Response<Body>,
+        response_headers: &mut HeaderMap,
         cookie_config: CookieConfig<'_, ()>,
         session_id: Option<&Uuid>,
     ) -> Result<(), Error> {
@@ -114,7 +113,7 @@ pub trait SessionStore: 'static + Send + Sync + Debug {
         if let Some(session_id) = session_id {
             self.delete(session_id).await?;
         }
-        res.headers_mut().append(SET_COOKIE, header_value);
+        response_headers.append(SET_COOKIE, header_value);
         Ok(())
     }
 }
@@ -145,21 +144,23 @@ impl<S: SessionStore + ?Sized, Wrapper: 'static + Debug + Deref<Target = S> + Se
     }
     async fn store_session_and_set_cookie(
         &self,
-        res: &mut Response<Body>,
+        response_headers: &mut HeaderMap,
         cookie_config: CookieConfig<'_, Self::Value>,
         prefix: Option<String>,
     ) -> Result<(), Error> {
         self.deref()
-            .store_session_and_set_cookie(res, cookie_config, prefix)
+            .store_session_and_set_cookie(response_headers, cookie_config, prefix)
             .await
     }
     async fn delete_session(
         &self,
-        res: &mut Response<Body>,
+        response_headers: &mut HeaderMap,
         cookie_config: CookieConfig<'_, ()>,
         session_id: Option<&Uuid>,
     ) -> Result<(), Error> {
-        self.deref().delete_session(res, cookie_config, session_id).await
+        self.deref()
+            .delete_session(response_headers, cookie_config, session_id)
+            .await
     }
 }
 

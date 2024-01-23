@@ -1,6 +1,8 @@
-use chrono::{Duration, NaiveDateTime};
-use std::ops::Deref;
-use uuid::Uuid;
+use ::anyhow::Error;
+use ::chrono::{Duration, NaiveDateTime};
+use ::http::Extensions;
+use ::std::ops::Deref;
+use ::uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -47,26 +49,26 @@ impl<T> Deref for Session<T> {
 pub trait RawSession<ParsedSession>: Sized {
     type Key;
     type Validation;
-    fn try_decode(self, key: &Self::Key, validation: &Self::Validation) -> Result<ParsedSession, anyhow::Error>;
+    fn try_decode(self, key: &Self::Key, validation: &Self::Validation) -> Result<ParsedSession, Error>;
     fn add_extensions(
-        session: Result<Option<Self>, anyhow::Error>,
+        session: Result<Option<Self>, Error>,
         key: &Self::Key,
         validation: &Self::Validation,
-        extensions: &mut http::Extensions,
+        extensions: &mut Extensions,
     );
 }
 
-impl<T: Send + Sync + 'static> RawSession<T> for T {
+impl<T: Clone + Send + Sync + 'static> RawSession<T> for T {
     type Key = ();
     type Validation = ();
-    fn try_decode(self, _: &Self::Key, _: &Self::Validation) -> Result<T, anyhow::Error> {
+    fn try_decode(self, _: &Self::Key, _: &Self::Validation) -> Result<T, Error> {
         Ok(self)
     }
     fn add_extensions(
-        session: Result<Option<Self>, anyhow::Error>,
+        session: Result<Option<Self>, Error>,
         _: &Self::Key,
         _: &Self::Validation,
-        extensions: &mut http::Extensions,
+        extensions: &mut Extensions,
     ) {
         match session {
             Ok(Some(session)) => extensions.insert(Some(session)),
@@ -82,29 +84,9 @@ pub enum RequestSession<T> {
     Session(Session<T>),
 }
 
-#[cfg(feature = "axum-core-02")]
+#[cfg(feature = "axum-core")]
 #[async_trait]
-impl<B, T> axum_core_02::extract::FromRequest<B> for Session<T>
-where
-    B: Send,
-    T: serde::de::DeserializeOwned + Send + Sync + 'static,
-{
-    type Rejection = http::StatusCode;
-
-    async fn from_request(req: &mut axum_core_02::extract::RequestParts<B>) -> Result<Self, Self::Rejection> {
-        req.extensions_mut()
-            .remove::<Option<Session<T>>>()
-            .flatten()
-            .ok_or_else(|| {
-                log::error!("tried to extract session::Session from request when there was none, use axum::extract::Extract<Option<session::Session<T>>> instead of axum::extract::Extract<session::Session<T>> for correct extraction session from requests");
-                http::StatusCode::INTERNAL_SERVER_ERROR
-            })
-    }
-}
-
-#[cfg(feature = "axum-core-03")]
-#[async_trait]
-impl<S, B, T> axum_core_03::extract::FromRequest<S, B> for Session<T>
+impl<S, B, T> axum_core::extract::FromRequest<S, B> for Session<T>
 where
     S: Send + Sync,
     B: Send + 'static,

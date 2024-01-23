@@ -1,17 +1,17 @@
 use crate::*;
-use anyhow::Error;
-use deadpool::managed::{self, Object, Pool};
-use derivative::Derivative;
-use log::info;
-use redis_cluster_async::redis::{self, aio::ConnectionLike, cmd, RedisError};
-use ring::hmac::{Key, HMAC_SHA256};
-use serde::{de::DeserializeOwned, Serialize};
-use std::fmt::{Debug, Display};
-use std::ops::{Deref, DerefMut};
-use std::{marker::PhantomData, sync::Arc};
-use typed_builder::TypedBuilder;
-use url::Url;
-use uuid::Uuid;
+use ::anyhow::Error;
+use ::deadpool::managed::{self, Metrics, Object, Pool};
+use ::derivative::Derivative;
+use ::log::info;
+use ::redis_cluster_async::redis::{self, aio::ConnectionLike, cmd, RedisError};
+use ::ring::hmac::{Key, HMAC_SHA256};
+use ::serde::{de::DeserializeOwned, Serialize};
+use ::std::fmt::{Debug, Display};
+use ::std::ops::{Deref, DerefMut};
+use ::std::{marker::PhantomData, sync::Arc};
+use ::typed_builder::TypedBuilder;
+use ::url::Url;
+use ::uuid::Uuid;
 
 #[derive(Clone, Copy, Derivative, TypedBuilder)]
 #[derivative(Debug)]
@@ -75,7 +75,7 @@ impl managed::Manager for Manager<redis::Client> {
         self.client.get_async_connection().await
     }
 
-    async fn recycle(&self, mut conn: &mut Self::Type) -> managed::RecycleResult<Self::Error> {
+    async fn recycle(&self, mut conn: &mut Self::Type, _: &Metrics) -> managed::RecycleResult<Self::Error> {
         cmd("PING").query_async::<_, ()>(conn.deref_mut()).await?;
         Ok(())
     }
@@ -90,7 +90,7 @@ impl managed::Manager for Manager<redis_cluster_async::Client> {
         self.client.get_connection().await
     }
 
-    async fn recycle(&self, mut conn: &mut Self::Type) -> managed::RecycleResult<Self::Error> {
+    async fn recycle(&self, mut conn: &mut Self::Type, _: &Metrics) -> managed::RecycleResult<Self::Error> {
         cmd("PING").query_async::<_, ()>(conn.deref_mut()).await?;
         Ok(())
     }

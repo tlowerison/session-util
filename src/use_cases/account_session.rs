@@ -35,7 +35,7 @@ pub struct AccountSessionSubject<AccountId>(pub AccountId);
 impl<AccountId, Fields> RawSession<AccountSession<AccountId, Fields>> for Session<AccountSessionToken<()>>
 where
     AccountId: Clone + std::fmt::Debug + DeserializeOwned + Send + Sync + 'static,
-    Fields: DeserializeOwned + std::fmt::Debug + Send + Sync + 'static,
+    Fields: Clone + DeserializeOwned + std::fmt::Debug + Send + Sync + 'static,
 {
     type Key = DecodingKey;
     type Validation = Validation;

@@ -5,44 +5,42 @@ authors = ["Trey Lowerison"]
 edition = "2021"
 
 [dependencies]
-anyhow = "1"
-async-trait = "0"
-cfg-if = "1"
-chrono = { version = "0", features = ["serde"] }
-clap = { version = "4", features = ["derive", "env"], optional = true }
-cookie = { version = "0", features = ["secure", "percent-encode"] }
-data-encoding = "2"
-futures = "0"
-http = "0"
-hyper = "0"
-jsonwebtoken = "8"
-percent-encoding = "2"
-pin-project-lite = "0"
-ring = "0"
-serde = "1"
-serde_json = "1"
-serde_plain = "1"
-tokio = "1"
-tower-layer = "0"
-tower-service = "0"
-uuid = { version = "1", features = ["serde", "v4"] }
+anyhow = "1.0"
+async-trait = "0.1"
+cfg-if = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.4", features = ["derive", "env"], optional = true }
+cookie = { version = "0.18", features = ["secure", "percent-encode"] }
+data-encoding = "2.5"
+futures = "0.3"
+http = "1.0"
+http-body = "1.0"
+hyper = "1.1"
+jsonwebtoken = "9.2"
+percent-encoding = "2.3"
+pin-project-lite = "0.2"
+ring = "0.17"
+serde = "1.0"
+serde_json = "1.0"
+serde_plain = "1.0"
+tokio = "1.35"
+tower-layer = "0.3"
+tower-service = "0.3"
+uuid = { version = "1.7", features = ["serde", "v4"] }
 
-deadpool = { version = "0", optional = true }
-derivative = { version = "2", optional = true }
-derive_more = { version = "0", optional = true }
-log = { version = "0", optional = true }
-redis_cluster_async = { version = "0", optional = true }
-serde_with = { version = "2", optional = true }
-typed-builder = { version = "0", optional = true }
-url = { version = "2", optional = true }
-
-axum-core-02 = { package = "axum-core", version = "0.2", optional = true }
-axum-core-03 = { package = "axum-core", version = "0.3", optional = true }
+axum-core = { version = "0.4", optional = true }
+deadpool = { version = "0.10", optional = true }
+derivative = { version = "2.2", optional = true }
+derive_more = { version = "0.99", optional = true }
+log = { version = "0.4", optional = true }
+redis_cluster_async = { version = "0.8", optional = true }
+serde_with = { version = "3.5", optional = true }
+typed-builder = { version = "0.18", optional = true }
+url = { version = "2.5", optional = true }
 
 [features]
 account-session = ["dep:derive_more", "dep:derivative", "dep:serde_with", "dep:typed-builder"]
-axum-core-02 = ["dep:axum-core-02", "dep:log"]
-axum-core-03 = ["dep:axum-core-03", "dep:log"]
+axum = ["dep:axum-core", "dep:log"]
 cli = ["dep:clap"]
 redis-backend = ["dep:deadpool", "dep:derivative", "dep:log", "dep:redis_cluster_async", "dep:typed-builder", "dep:url"]
 
